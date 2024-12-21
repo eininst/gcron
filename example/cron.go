@@ -1,16 +1,3 @@
-# gcron
-
-`A simple scheduling framework based on cronexpr, supporting distributed execution with Redis.`
-
-## ⚙ Installation
-
-```text
-go get -u github.com/eininst/gcron
-```
-
-## ⚡ Quickstart
-
-```go
 package main
 
 import (
@@ -30,10 +17,3 @@ func main() {
 
 	cron.Spin()
 }
-```
-
-> See [example](/example)
-
-## License
-
-*MIT*

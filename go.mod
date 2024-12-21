@@ -1,4 +1,4 @@
-module github.com/eininst/go-cron
+module github.com/eininst/gcron
 
 go 1.23.4
 
