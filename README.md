@@ -33,8 +33,6 @@ func main() {
 
 
 ### Multiple instances example
-`模拟启动多个实例`
-
 ```go
 package main
 
