@@ -32,7 +32,7 @@ type job struct {
 }
 
 type Cron interface {
-	Handler(expr string, fc Function)
+	Task(expr string, fc Function)
 	Spin()
 	Shutdown()
 }
@@ -61,7 +61,7 @@ func New(opts ...Option) Cron {
 	}
 }
 
-func (c *cron) Handler(expr string, fc Function) {
+func (c *cron) Task(expr string, fc Function) {
 	expression, err := cronexpr.Parse(expr)
 	if err != nil {
 		glog.Fatal(err)
@@ -104,6 +104,7 @@ func (c *cron) Spin() {
 
 		<-quit
 		glog.Printf("\033[33mShutdown...\033[0m")
+
 		c.Shutdown()
 	}()
 

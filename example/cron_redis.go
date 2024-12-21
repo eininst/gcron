@@ -18,7 +18,7 @@ func main() {
 			cron := gcron.New(gcron.WithRedisUrl("redis://127.0.0.1:6379/0"))
 
 			//I will execute every 5 seconds.
-			cron.Handler("*/5 * * * * * *", func(ctx context.Context) error {
+			cron.Task("*/5 * * * * * *", func(ctx context.Context) error {
 				fmt.Println("done")
 				return nil
 			})

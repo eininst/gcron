@@ -10,7 +10,7 @@ func main() {
 	cron := gcron.New()
 
 	//I will execute every 5 seconds.
-	cron.Handler("*/5 * * * * * *", func(ctx context.Context) error {
+	cron.Task("*/5 * * * * * *", func(ctx context.Context) error {
 		fmt.Println("done")
 		return nil
 	})
