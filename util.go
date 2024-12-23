@@ -16,10 +16,11 @@ type Option struct {
 }
 
 type Options struct {
-	RedisUrl   string
-	Name       string
-	Signals    []os.Signal
-	LockExpire time.Duration
+	RedisUrl     string
+	Name         string
+	Signals      []os.Signal
+	LockExpire   time.Duration
+	ExitWaitTime time.Duration
 }
 
 func (o *Options) Apply(opts []Option) {
@@ -46,9 +47,15 @@ func WithRedisUrl(redisUrl string) Option {
 	}}
 }
 
-func WithLockExpireSeconds(d time.Duration) Option {
+func WithLockExpire(d time.Duration) Option {
 	return Option{F: func(o *Options) {
 		o.LockExpire = d
+	}}
+}
+
+func WithExitWaitTime(d time.Duration) Option {
+	return Option{F: func(o *Options) {
+		o.ExitWaitTime = d
 	}}
 }
 

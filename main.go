@@ -39,16 +39,16 @@ type cron struct {
 	stop    chan int
 	cancels []context.CancelFunc
 	wg      sync.WaitGroup
-
 	rcli    *redis.Client
 	options Options
 }
 
 func New(opts ...Option) Cron {
 	options := &Options{
-		RedisUrl:   "",
-		Name:       "JOB",
-		LockExpire: time.Second * 5, // 默认5秒
+		RedisUrl:     "",
+		Name:         "JOB",
+		LockExpire:   time.Second * 5,  // 默认5秒
+		ExitWaitTime: time.Second * 10, //默认10秒
 	}
 	options.Apply(opts)
 
@@ -110,7 +110,6 @@ func (c *cron) Spin() {
 
 	glog.Printf("Running... (%v jobs)", len(c.jobs))
 	<-c.stop
-	glog.Printf("Graceful shutdown success")
 }
 
 func (c *cron) Shutdown() {
@@ -118,7 +117,25 @@ func (c *cron) Shutdown() {
 	for _, cancel := range c.cancels {
 		cancel()
 	}
-	c.wg.Wait()
+
+	// 等待剩余任务处理完毕
+	ctx, cancel := context.WithTimeout(context.Background(), c.options.ExitWaitTime)
+	defer cancel()
+
+	done := make(chan struct{}, 1)
+	go func() {
+		c.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		glog.Printf("Graceful shutdown success")
+	case <-ctx.Done():
+		if ctx.Err() == context.DeadlineExceeded {
+			glog.Println("Shutdown timeout exceeded")
+		}
+	}
 }
 
 func getFunctionName(fn Function) string {
