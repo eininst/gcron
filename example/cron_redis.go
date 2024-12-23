@@ -15,7 +15,8 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			cron := gcron.New(gcron.WithRedisUrl("redis://127.0.0.1:6379/0"))
+			cron := gcron.New(gcron.WithRedisUrl("redis://127.0.0.1:6379/0"),
+				gcron.WithSignal(syscall.SIGTERM, syscall.SIGINT))
 
 			//I will execute every 5 seconds.
 			cron.Task("*/5 * * * * * *", func(ctx context.Context) error {

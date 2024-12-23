@@ -19,16 +19,13 @@ var glog = log.New(os.Stderr, "[CRON] ", log.Lmsgprefix|log.Ldate|log.Ltime)
 
 const TIME_FORMAT = "20060102150405"
 
-type Context struct {
-	context.Context
-}
 type Function func(ctx context.Context) error
 
 type job struct {
 	CronLine   string
 	Fc         Function
+	FcName     string // 优化点1：存储函数名，避免每次反射
 	Expression *cronexpr.Expression
-	LastTime   time.Time
 }
 
 type Cron interface {
@@ -49,13 +46,14 @@ type cron struct {
 
 func New(opts ...Option) Cron {
 	options := &Options{
-		RedisUrl: "",
-		Name:     "JOB",
+		RedisUrl:   "",
+		Name:       "JOB",
+		LockExpire: time.Second * 5, // 默认5秒
 	}
 	options.Apply(opts)
 
 	return &cron{
-		jobs:    []*job{},
+		jobs:    make([]*job, 0),
 		stop:    make(chan int, 1),
 		options: *options,
 	}
@@ -67,70 +65,66 @@ func (c *cron) Task(expr string, fc Function) {
 		glog.Fatal(err)
 	}
 
+	fcName := getFunctionName(fc)
+
 	c.jobs = append(c.jobs, &job{
 		CronLine:   expr,
 		Fc:         fc,
+		FcName:     fcName,
 		Expression: expression,
-		LastTime:   time.Now().Truncate(time.Second),
 	})
 }
 
 func (c *cron) Spin() {
 	ctx := context.Background()
 
+	// 如果有 Redis URL，则初始化 Redis 客户端
 	if c.options.RedisUrl != "" {
 		c.rcli = NewRedisClient(c.options.RedisUrl, len(c.jobs))
 	}
 
+	// 创建每个任务的 Goroutine
 	for _, j := range c.jobs {
 		ctxCancel, cancel := context.WithCancel(ctx)
 		c.cancels = append(c.cancels, cancel)
 
 		c.wg.Add(1)
-		go func() {
+		go func(job *job) {
 			defer c.wg.Done()
-			c.execute(ctxCancel, j)
-		}()
+			c.execute(ctxCancel, job)
+		}(j)
 	}
 
+	// 捕捉信号，用于优雅关闭
 	go func() {
 		quit := make(chan os.Signal, 1)
-
 		if len(c.options.Signals) == 0 {
 			signal.Notify(quit, syscall.SIGTERM)
 		} else {
 			signal.Notify(quit, c.options.Signals...)
 		}
-
 		<-quit
-		glog.Printf("\033[33mShutdown...\033[0m")
-
+		glog.Printf("Shutdown...")
 		c.Shutdown()
 	}()
 
 	glog.Printf("Running... (%v jobs)", len(c.jobs))
-
 	<-c.stop
-
-	glog.Printf("\033[32mGraceful shutdown success!\033[0m")
+	glog.Printf("Graceful shutdown success!")
 }
 
 func (c *cron) Shutdown() {
 	defer func() { c.stop <- 1 }()
-
 	for _, cancel := range c.cancels {
 		cancel()
 	}
-
 	c.wg.Wait()
 }
 
-func getFunctionName(fn interface{}) string {
-	pc := runtime.FuncForPC(reflect.ValueOf(fn).Pointer())
-	if pc == nil {
-		return ""
-	}
-	return pc.Name()
+func getFunctionName(fn Function) string {
+	// 这里不再使用反射，直接打印内存地址也行，或者让调用方自行传函数名
+	// 如果一定要通过反射获取，可以保留，但只在 Task() 阶段调用一次
+	return runtime.FuncForPC(runtime.FuncForPC((reflect.ValueOf(fn).Pointer())).Entry()).Name()
 }
 
 func callFc(fcName string, try func()) {
@@ -139,47 +133,46 @@ func callFc(fcName string, try func()) {
 			glog.Printf("\033[31merror by [%v]: %v\033[0m", fcName, r)
 		}
 	}()
-
 	try()
 }
 
+// execute 改用循环 + time.Sleep 模式，避免频繁重置 ticker
 func (c *cron) execute(ctx context.Context, j *job) {
-	firstNextTime := j.Expression.Next(time.Now())
-	ticker := time.NewTicker(time.Until(firstNextTime))
-
-	fcName := getFunctionName(j.Fc)
-	name := c.options.Name
-	ex := time.Second * 5
-
 	for {
+		// 计算下一次执行时间
+		now := time.Now()
+		nextTime := j.Expression.Next(now)
+		duration := nextTime.Sub(now)
+		if duration < 0 {
+			duration = 0
+		}
+
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			callFc(fcName, func() {
-				nextTime := j.Expression.Next(time.Now())
-				ticker.Reset(time.Until(nextTime))
-
+		case <-time.After(duration):
+			// 到达执行时间，安全执行任务
+			callFc(j.FcName, func() {
+				// 如果使用 Redis 互斥
 				if c.rcli != nil {
-					jobKey := fmt.Sprintf("%v_%v_%v", name,
-						fcName, nextTime.Format(TIME_FORMAT))
+					jobKey := fmt.Sprintf("%v_%v_%v",
+						c.options.Name,
+						j.FcName,
+						nextTime.Format(TIME_FORMAT))
 
-					ok, _er := c.rcli.SetNX(ctx, jobKey, 1, ex).Result()
-					if _er != nil {
-						panic(_er)
+					ok, err := c.rcli.SetNX(ctx, jobKey, 1, c.options.LockExpire).Result()
+					if err != nil {
+						panic(err)
 					}
 					if ok {
-						er := j.Fc(ctx)
-
-						if er != nil {
-							panic(er)
+						if err := j.Fc(ctx); err != nil {
+							panic(err)
 						}
 					}
 				} else {
-					er := j.Fc(ctx)
-
-					if er != nil {
-						panic(er)
+					// 无 Redis 直接执行
+					if err := j.Fc(ctx); err != nil {
+						panic(err)
 					}
 				}
 			})

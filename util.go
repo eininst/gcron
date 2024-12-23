@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Option struct {
@@ -15,9 +16,10 @@ type Option struct {
 }
 
 type Options struct {
-	RedisUrl string
-	Name     string
-	Signals  []os.Signal
+	RedisUrl   string
+	Name       string
+	Signals    []os.Signal
+	LockExpire time.Duration
 }
 
 func (o *Options) Apply(opts []Option) {
@@ -41,6 +43,12 @@ func WithName(name string) Option {
 func WithRedisUrl(redisUrl string) Option {
 	return Option{F: func(o *Options) {
 		o.RedisUrl = redisUrl
+	}}
+}
+
+func WithLockExpireSeconds(d time.Duration) Option {
+	return Option{F: func(o *Options) {
+		o.LockExpire = d
 	}}
 }
 
