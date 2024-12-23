@@ -105,7 +105,7 @@ func main() {
 
 
 ### 3. 自定义信号与手动关闭
-如果想监听 SIGINT、SIGTERM 等自定义信号，或`手动调用 Shutdown()`，可参考以下示例：
+如果想监听 SIGINT、SIGTERM 等自定义信号，或手动调用 `Shutdown()`，可参考以下示例：
 
 ```go
 package main
