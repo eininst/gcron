@@ -110,7 +110,7 @@ func (c *cron) Spin() {
 
 	glog.Printf("Running... (%v jobs)", len(c.jobs))
 	<-c.stop
-	glog.Printf("Graceful shutdown success!")
+	glog.Printf("Graceful shutdown success")
 }
 
 func (c *cron) Shutdown() {
