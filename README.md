@@ -87,7 +87,7 @@ func main() {
     c := gcron.New(
         // 配置 Redis 地址，启用分布式互斥
         gcron.WithRedisUrl("redis://127.0.0.1:6379/0"),
-        // 设置任务名称前缀
+        // 设置任务名称前缀，区分不同应用
         gcron.WithName("JOB_DEMO"),
     )
 
