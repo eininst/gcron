@@ -29,7 +29,7 @@ func (o *Options) Apply(opts []Option) {
 	}
 }
 
-func WithSignal(sig ...os.Signal) Option {
+func WithSignals(sig ...os.Signal) Option {
 	return Option{F: func(o *Options) {
 		o.Signals = sig
 	}}
