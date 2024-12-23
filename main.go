@@ -113,7 +113,7 @@ func (c *cron) Spin() {
 }
 
 func (c *cron) Shutdown() {
-	defer func() { c.stop <- 1 }()
+	defer func() { close(c.stop) }()
 	for _, cancel := range c.cancels {
 		cancel()
 	}
