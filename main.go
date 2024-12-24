@@ -3,8 +3,8 @@ package gcron
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"github.com/gorhill/cronexpr"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
 	"os/signal"

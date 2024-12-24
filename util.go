@@ -3,7 +3,7 @@ package gcron
 import (
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"net/url"
 	"os"
