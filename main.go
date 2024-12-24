@@ -78,9 +78,13 @@ func (c *cron) Task(expr string, fc Function) {
 func (c *cron) Spin() {
 	ctx := context.Background()
 
-	// 如果有 Redis URL，则初始化 Redis 客户端
-	if c.options.RedisUrl != "" {
-		c.rcli = NewRedisClient(c.options.RedisUrl, len(c.jobs))
+	// 如果有 Redis URL或ReidsClient，则不会启动分布式互斥
+	if c.options.RedisClient == nil {
+		if c.options.RedisUrl != "" {
+			c.rcli = NewRedisClient(c.options.RedisUrl, len(c.jobs))
+		}
+	} else {
+		c.rcli = c.options.RedisClient
 	}
 
 	// 创建每个任务的 Goroutine

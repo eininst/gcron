@@ -17,6 +17,7 @@ type Option struct {
 
 type Options struct {
 	RedisUrl     string
+	RedisClient  *redis.Client
 	Name         string
 	Signals      []os.Signal
 	LockExpire   time.Duration
@@ -44,6 +45,12 @@ func WithName(name string) Option {
 func WithRedisUrl(redisUrl string) Option {
 	return Option{F: func(o *Options) {
 		o.RedisUrl = redisUrl
+	}}
+}
+
+func WithRedisClient(client *redis.Client) Option {
+	return Option{F: func(o *Options) {
+		o.RedisClient = client
 	}}
 }
 
