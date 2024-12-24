@@ -177,13 +177,13 @@ func (c *cron) execute(ctx context.Context, j *job) {
 						j.FcName,
 						nextTime.Format(TIME_FORMAT))
 
-					ok, err := c.rcli.SetNX(ctx, jobKey, 1, c.options.LockExpire).Result()
-					if err != nil {
-						panic(err)
+					ok, er := c.rcli.SetNX(ctx, jobKey, 1, c.options.LockExpire).Result()
+					if er != nil {
+						panic(er)
 					}
 					if ok {
-						if err := j.Fc(ctx); err != nil {
-							panic(err)
+						if er = j.Fc(ctx); er != nil {
+							panic(er)
 						}
 					}
 				} else {
