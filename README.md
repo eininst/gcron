@@ -147,7 +147,7 @@ func main() {
 * 
 > See [example](/example)
 
-### More
+### Cron Expression
 > See [gorhill/cronexpr](https://github.com/gorhill/cronexpr)
 
 
