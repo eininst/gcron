@@ -144,7 +144,7 @@ func main() {
 ```
 * `WithSignals(...)` 可替换默认只监听 SIGTERM 的行为。
 * `Shutdown()` 会取消所有任务上下文并等待它们结束后退出。
-* 
+
 > See [example](/example)
 
 ### Cron Expression
