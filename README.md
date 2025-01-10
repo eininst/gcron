@@ -144,9 +144,14 @@ func main() {
 ```
 * `WithSignals(...)` 可替换默认只监听 SIGTERM 的行为。
 * `Shutdown()` 会取消所有任务上下文并等待它们结束后退出。
-
-
+* 
 > See [example](/example)
+
+### More
+> See [gorhill/cronexpr](https://github.com/gorhill/cronexpr)
+
+
+
 
 ## 开发与贡献
 欢迎参与本项目开发和提交 Issue/PR：
